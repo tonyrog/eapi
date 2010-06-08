@@ -1,0 +1,11 @@
+%% -*- erlang -*-
+%% 
+
+{typedef, void,   {const, atom_t, ok}}.
+{enum,  abc_t, int_t, [{a, 1},{b,2},{c,3}]}.
+{enum,  efg_t, int_t, [{e, 'E'}, {f, 'F'}, {g, 'G'}]}.
+
+{function, void, init,    []}.
+{function, int_t, get_a,  [{int_t,b}]}.
+{function, int_t, get_b,  [{float_t,c}]}.
+{function, void,  set_ae, [{abc_t, x}, {efg_t, y}]}.

@@ -1,0 +1,8 @@
+%% -*- erlang -*-
+%% 
+{c_function_prefix, "object_drv_impl"}.
+
+{function, [command], object_t, create_object, [{int_t, x}]}.
+{function, [command], int_t, get_x, [{object_t,obj}]}.
+{function, [command], int_t, set_x, [{object_t,obj},{int_t,x}]}.
+

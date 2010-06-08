@@ -1,0 +1,9 @@
+{application, edrv,
+ [{description, "Erlang API library"},
+  {vsn, "%VSN%"},
+  {modules, [cbuf, eapi, eapi_erl, eapi_c, eapi_drv]},
+  {registered, []},
+  {mod,{edrv_app,[]}},
+  {env, []},
+  {applications,[kernel,stdlib]}
+  ]}.

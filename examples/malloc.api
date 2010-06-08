@@ -1,0 +1,16 @@
+%% -*- erlang -*-
+%%
+%%   API for using malloc/realloc/free 
+%%
+{typedef, void,  {const,atom_t, ok}}.
+{c_include, "<stdlib.h"}.
+
+{function,[extern], pointer_t, malloc,  [{size_t, size}]}.
+{function,[extern], void,      free,    [{pointer_t, ptr}]}.
+{function,[extern], pointer_t, realloc, [{pointer_t, ptr}, {size_t, size}]}.
+
+%% wrapped functions
+{function, uint8_t,   peek,    [{pointer_t, ptr}, {uint_t, offset}]}.
+{function, void,      poke,    [{pointer_t, ptr}, {uint_t, offset}, {uint8_t,data}]}.
+
+

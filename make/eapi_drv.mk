@@ -16,12 +16,14 @@ CFLAGS += -fPIC -Wall -Wextra -Wswitch-default -Wswitch-enum -D_THREAD_SAFE -D_R
 ifeq ($(TYPE), debug)
 OBJDIR=../obj/debug
 LIBDIR=../lib/debug
+PRIVDIR=../priv/debug
 CFLAGS +=  -Ddebug -DDEBUG -g 
 endif
 
 ifeq ($(TYPE), release)
 OBJDIR=../obj/release
 LIBDIR=../lib/release
+PRIVDIR=../priv/release
 CFLAGS += -fPIC -O3 
 endif
 

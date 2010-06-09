@@ -31,7 +31,11 @@ code([{type,ID}|Is], Api, Ds, Fs) ->
 	#api_struct { } ->
 	    %% generate a record defintions  -record(abc, { a,b,c })
 	    %% generate encoder/decoder
-	    RecDef = struct_def(I, Api),
+	    RecDef = if I#api_struct.intern -> 
+			     [];
+			true ->
+			     struct_def(I, Api)
+		     end,
 	    RecEnc = struct_encoder(I, Api),
 	    RecDec = struct_decoder(I, Api),
 	    code(Is, Api, [RecDef|Ds], [RecEnc,RecDec|Fs]);
@@ -205,7 +209,7 @@ elem_encode(Type, Var, Expr, Api) ->
 	ssize_t   -> {"",["?ssize_t((",Expr,"))"]};
 	boolean_t ->
 	    {[Var,"__bool=if (",Expr, ") -> 1; true -> 0 end"],
-	     ["?int_t(",Var,"__bool)"]};
+	     ["?uint8_t(",Var,"__bool)"]};
 
 	binary_t ->
 	    {[Var,"__size = byte_size(",Expr,")"],
@@ -251,8 +255,7 @@ elem_encode(Type, Var, Expr, Api) ->
 
 	#api_struct { name=Name } ->
 	    %% FIXME: inline simple struct
-	    {[Var,"__bin = list_to_binary(e_struct_",
-	      Name,"(",Expr,")),",
+	    {[Var,"__bin = e_struct_",Name,"(",Expr,"),",
 	      Var,"__size = byte_size(",Var,"__bin)"],
 	     ["?uint32_t(",Var,"__size),",
 	      Var,"__bin/binary"]};

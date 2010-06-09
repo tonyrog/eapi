@@ -205,7 +205,7 @@ verify_chars(Err, Buf) ->
 %%
 %%  struct-fields  = [<struct-field>]
 %%  struct-field   = {<type>,[,<field-opts>] <field-name>}
-%%  struct-opts    = [extern]
+%%  struct-opts    = [extern,intern]
 %%  field-opts     = [{size,<field-name>}, {length,<filed-name>}]
 %%
 %%  function-opts  = [extern]
@@ -284,23 +284,23 @@ load_api([Item|Items], Api, ApiList) ->
 	    Api1 = Api#api { c_symbol_prefix = Prefix },
 	    load_api(Items, Api1, ApiList);
 
-	{c_include, File} ->
+	{c_include, File} when is_list(File) ->
 	    Api1 = Api#api { c_includes = Api#api.c_includes ++ [File]},
 	    load_api(Items, Api1, ApiList);
 
-	{erl_function_prefix, Prefix} ->
+	{erl_function_prefix, Prefix} when is_list(Prefix) ->
 	    Api1 = Api#api { erl_function_prefix = Prefix },
 	    load_api(Items, Api1, ApiList);
 
-	{erl_symbol_prefix, Prefix} ->
+	{erl_symbol_prefix, Prefix} when is_list(Prefix) ->
 	    Api1 = Api#api { erl_symbol_prefix = Prefix },
 	    load_api(Items, Api1, ApiList);
 
-	{erl_include, File} ->
+	{erl_include, File} when is_list(File) ->
 	    Api1 = Api#api { erl_includes = Api#api.erl_includes ++ [File]},
 	    load_api(Items, Api1, ApiList);
 
-	{erl_app_name, Name} ->
+	{erl_app_name, Name} when is_list(Name) ->
 	    Api1 = Api#api { erl_app_name = Name },
 	    load_api(Items, Api1, ApiList);
 
@@ -369,6 +369,7 @@ load_api([Item|Items], Api, ApiList) ->
 	    {ApiFields,Api1} = load_api_fields(Fields, Api),
 	    Struct = #api_struct { name=atom_to_list(Name),
 				   extern = proplists:get_bool(extern,Opts),
+				   intern = proplists:get_bool(intern,Opts),
 				   fields = ApiFields },
 	    load_api_struct(Name, Struct, Items, Api1, ApiList);
 

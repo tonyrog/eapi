@@ -9,7 +9,7 @@
 
 static inline int cbuf_get_boolean(cbuf_t* cp, uint8_t* val)
 {
-    return (cbuf_read(cp, &val, sizeof(*val)) == sizeof(*val));
+    return (cbuf_read(cp, val, sizeof(*val)) == sizeof(*val));
 }
 
 static inline int cbuf_get_uint8(cbuf_t* cp, uint8_t* val)

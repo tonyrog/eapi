@@ -168,12 +168,13 @@ type_to_string(Type,Api,StructPtr) ->
 	    [type_to_string(AType,Api,""),"*"];
 	#api_enum{name=Name} -> 
 	    Name;
-	#api_struct{name=Name} ->
+	#api_struct{} ->
+	    Name = struct_name(Type),
 	    ["struct ",Name,StructPtr];
 	ID when is_atom(ID) ->
 	    case dict:find(ID, Api#api.types) of
-		{ok,#api_struct{name=Name}} -> 
-		    ["struct ",Name,StructPtr];
+		{ok,I=#api_struct{}} -> 
+		    ["struct ",struct_name(I),StructPtr];
 		_ ->
 		    case eapi:is_pointer_type(ID,Api) of
 			true -> [atom_to_list(ID),"*"];
@@ -240,8 +241,8 @@ elem_decode(Type, Src, Dst, Api) ->
 	     "  ", elem_decode(EType, Src, "&kix", Api), ";",
 	     "  *(", Dst, ") = ", Name,"_kv[kix].value;\n", 
 	     "}"];
-	#api_struct{name=Name} ->
-	    ["d_struct_", Name, "(ctx,",Src,",",Dst,")"];
+	#api_struct{} ->
+	    ["d_struct_", struct_name(Type), "(ctx,",Src,",",Dst,")"];
 	TName when is_atom(TName) ->
 	    elem_decode(dict:fetch(TName, Api#api.types), Src, Dst, Api)
     end.
@@ -343,8 +344,8 @@ elem_encode(Type, Buf, Src0, Size, Api) ->
 	     "  *(", Src, ") = ", Name,"_kv[kix].value;\n", 
 	     "}"];
 
-	#api_struct {name=Name} ->
-	    ["e_struct_", Name, "(ctx,",Buf,",",Src,")"];
+	#api_struct {} ->
+	    ["e_struct_", struct_name(Type), "(ctx,",Buf,",",Src,")"];
 	TName when is_atom(TName) ->
 	    elem_encode(dict:fetch(TName, Api#api.types), Buf, Src, "", Api)
     end.
@@ -361,7 +362,7 @@ encode_src(X, _) ->
 
 
 struct_def(I,Api) ->
-    Name = I#api_struct.name,
+    Name = struct_name(I),
     ["struct ", Name," {\n",
      format_seq(
        map(
@@ -374,7 +375,7 @@ struct_def(I,Api) ->
      "\n};\n"].
 
 struct_encoder(I, Api) when I#api_struct.c_encode ->
-    Name = I#api_struct.name,
+    Name = struct_name(I),
     N = length(I#api_struct.fields)+1,
     FDecl = ["int e_struct_", Name,
 	     "(eapi_ctx_t* ctx, cbuf_t* c_out, ", "struct ", Name, " *ptr)"],
@@ -406,12 +407,14 @@ struct_encoder(_I, _Api) ->
 
 %% Generate decoder of a struct
 struct_decoder(I, Api) when I#api_struct.c_decode ->
-    Name = I#api_struct.name,
+    Name = struct_name(I),
     FDecl = ["int d_struct_", Name,
 	     "(eapi_ctx_t* ctx, cbuf_t* c_in, ", "struct ", Name, " *ptr)"],
     Code = 
 	[FDecl,"\n",
 	 "{\n",
+	 "  uint32_t d_size;\n",
+	 "  cbuf_get_uint32(c_in,&d_size);\n",
 	 format_seq(
 	   map(
 	     fun(F) ->
@@ -452,3 +455,10 @@ mk_usymbol(A, B) -> string:to_upper(mk_symbol(A,B)).
 
 quote(String) ->
     [$", String, $"].
+
+struct_name(I) ->
+    if I#api_struct.intern ->
+	    "i_"++ I#api_struct.name;
+       true ->
+	    I#api_struct.name
+    end.

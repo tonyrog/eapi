@@ -56,6 +56,7 @@
 	{
 	  name,                %% string() struct name
 	  extern     = false,  %% extern = erlang only record def
+	  intern     = false,  %% record defined in some hrl file
 	  c_encode   = false,  %% generate a C encoder
 	  c_decode   = false,  %% generate a C decoder
 	  erl_encode = false,  %% generate an Erlang encoder

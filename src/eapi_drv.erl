@@ -13,6 +13,7 @@
 
 %% API
 -export([start_link/1, start/1, stop/1]).
+-export([open/1]).
 -export([create/5, async_create/5, release/4, retain/4]).
 -export([control/3, command/3]).
 
@@ -64,6 +65,7 @@ start(Args) ->
 
 stop(Srv) ->
     gen_server:call(Srv, stop).
+
 
 create(Port,Srv,Code,CodeDestroy,Args) ->
     case control(Port, Code, Args) of
@@ -123,6 +125,7 @@ command(Port, Code, Args) ->
     CmdRef = random:uniform(16#ffffffff),
     Header = <<?uint32_t(Code),?uint32_t(CmdRef)>>,
     ?dbg("command: code=~w, ref=~w\n", [Code, CmdRef]),
+    io:format("command: Args=~p\n", [[Header,Args]]),
     erlang:port_command(Port,[Header,Args]),
     wait_reply(CmdRef).
 
@@ -140,6 +143,36 @@ wait_reply(CmdRef) ->
 	    {error, no_reply}
     end.
 
+%% API to load the driver and start the port
+open(Args) ->
+    {driver_name,Driver} = proplists:lookup(driver_name, Args),
+    {app,App}           = proplists:lookup(app, Args),
+    DPath = case proplists:get_bool(debug, Args) of
+		false -> ?drv_path;
+		true -> "debug"
+	    end,
+    Path =  
+	case code:priv_dir(App) of
+	    {error, bad_name} -> ".";
+	    Dir ->
+		filename:join([Dir,DPath])
+	end,
+    ?dbg("Load driver '~s' from: '~s'\n", [Driver, Path]),
+    case erl_ddll:load_driver(Path, Driver) of
+	ok ->
+	    Port = erlang:open_port({spawn, Driver}, [binary]),
+	    case proplists:lookup(prt_name, Args) of
+		none ->
+		    {ok,Port};
+		{prt_name,PrtName} ->
+		    register(PrtName, Port),
+		    {ok,Port}
+	    end;
+	Err={error,Error} ->
+	    io:format("Error: ~s\n", [erl_ddll:format_error_int(Error)]),
+	    Err
+    end.
+
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
@@ -153,33 +186,19 @@ wait_reply(CmdRef) ->
 %%--------------------------------------------------------------------
 init(Args) ->
     {driver_name,Driver} = proplists:lookup(driver_name, Args),
-    {app,App}           = proplists:lookup(app, Args),
     {prt_name,PrtName} = proplists:lookup(prt_name, Args),
     {reg_name,RegName} = proplists:lookup(reg_name, Args),
     {srv_name,SrvName} = proplists:lookup(srv_name, Args),
-    DPath = case proplists:get_bool(debug, Args) of
-		false -> ?drv_path;
-		true -> "debug"
-	    end,
-    Path =  
-	case code:lib_dir(App) of
-	    {error, bad_name} -> ".";
-	    Dir ->
-		filename:join([Dir,"lib",DPath])
-	end,
-    ?dbg("Load driver '~s' from: '~s'\n", [Driver, Path]),
-    case erl_ddll:load_driver(Path, Driver) of
-	ok ->
-	    Port = erlang:open_port({spawn, Driver}, [binary]),
-	    register(PrtName, Port),
+    case open(Args) of
+	{ok,Port} ->
 	    Reg = ets:new(RegName, [named_table, public, set]),
-	    {ok, #s { port = Port, reg  = Reg,
+	    {ok, #s { port = Port, 
+		      reg  = Reg,
 		      driver_name = Driver,
 		      reg_name = RegName,
 		      srv_name = SrvName,
 		      prt_name = PrtName }};
 	{error,Error} ->
-	    io:format("Error: ~s\n", [erl_ddll:format_error_int(Error)]),
 	    {stop, Error}
     end.
 

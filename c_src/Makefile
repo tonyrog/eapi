@@ -2,8 +2,8 @@
 include ../make/eapi_drv.mk
 
 EDRV_OBJS = \
-	$(OBJDIR)/eapi_drv_lib.o \
-	$(OBJDIR)/lhash.o
+	$(OBJDIR)/$(EAPI_PFX)eapi_drv_lib.o \
+	$(OBJDIR)/$(EAPI_PFX)lhash.o
 
 all:
 	$(MAKE) lib TYPE=release
@@ -23,18 +23,18 @@ clean:
 clean_debug:
 	$(MAKE) clean_internal TYPE=debug
 
-lib: $(LIBDIR)/eapi_drv.a
+lib: $(LIBDIR)/$(EAPI_PFX)eapi_drv.a
 
-$(LIBDIR)/eapi_drv.a: $(EDRV_OBJS)
+$(LIBDIR)/$(EAPI_PFX)eapi_drv.a: $(EDRV_OBJS)
 	$(AR) -r $@ $(EDRV_OBJS)
 	$(RANLIB) $@
 
 depend:
 
 clean_internal:
-	-rm -f $(OBJDIR)/*.o
+	-rm -f $(OBJDIR)/$(EAPI_PFX)*.o
 
-$(OBJDIR)/eapi_drv_lib.o: \
+$(OBJDIR)/$(EAPI_PFX)eapi_drv_lib.o: \
 	../include/cbuf.h \
 	../include/cbuf_core.h \
 	../include/cbuf_get_native.h \
@@ -43,8 +43,8 @@ $(OBJDIR)/eapi_drv_lib.o: \
 	../include/cbuf_put_trm.h \
 	../include/lhash.h
 
-$(OBJDIR)/%.o: %.c
+$(OBJDIR)/$(EAPI_PFX)%.o: %.c
 	$(CC) -c -o $@ $(CFLAGS) -I$(ERL_C_INCLUDE_DIR) $<
 
- $(OBJDIR)/%.s: %.c
+ $(OBJDIR)/$(EAPI_PFX)%.s: %.c
 	$(CC) -S -o $@ $(CFLAGS) -I$(ERL_C_INCLUDE_DIR) $<

@@ -139,7 +139,17 @@ struct_decoder(_S, _Api) ->
 
 
 code_function(F, Api) ->
-    ArgNames = map(fun(A) -> erl_name(A#api_arg.name) end, F#api_function.args),
+    PortName = if Api#api.erl_prt_name =:= none ->
+		       "EApiPort";
+		  true ->
+		       Api#api.erl_prt_name
+	       end,
+    ArgNms = map(fun(A) -> erl_name(A#api_arg.name) end, F#api_function.args),
+    ArgNames = if Api#api.erl_prt_name =:= none ->
+		       ["EApiPort" | ArgNms];
+		  true ->
+		       ArgNms
+	       end,
     {Body,Args} = function_arguments(F#api_function.args,Api),
     Command = (F#api_function.interface == command) orelse
 	(Api#api.erl_default_interface == command),
@@ -150,7 +160,7 @@ code_function(F, Api) ->
      end,
      if Command ->
 	     [" eapi_drv:command(",
-	      Api#api.erl_prt_name, ","
+	      PortName, ","
 	      "?",mk_usymbol(Api#api.erl_symbol_prefix, "CMD_"),
 	      string:to_upper(F#api_function.name),
 	      ", [", 
@@ -162,7 +172,7 @@ code_function(F, Api) ->
 	     ];
 	true ->
 	     ["  eapi_drv:control(",
-	      Api#api.erl_prt_name, ","
+	      PortName, ","
 	      "?",mk_usymbol(Api#api.erl_symbol_prefix, "CMD_"),
 	      string:to_upper(F#api_function.name),
 	      ", <<", format_list(Args), ">>)"]

@@ -9,7 +9,7 @@
 
 -include("eapi.hrl").
 
--import(lists, [map/2, reverse/1, foldl/3]).
+-import(lists, [map/2, reverse/1, foldl/3, foldr/3]).
 
 code(Api) ->
     code(Api#api.items, Api, [], [], []).
@@ -32,11 +32,13 @@ code([{type,ID}|Is], Api, Ds, Fs, Es) ->
 	#api_struct {} ->
 	    {E_decl,E_code} = struct_encoder(I, Api),
 	    {D_decl,D_code} = struct_decoder(I, Api),
+	    {R_decl,R_code} = struct_release(I, Api),
 	    Ds1 = if I#api_struct.extern -> Ds;
 		     true -> [struct_def(I,Api)|Ds]
 		  end,
-	    code(Is, Api, [E_decl,D_decl|Ds1], [E_code,D_code|Fs], Es);
-
+	    code(Is, Api, [E_decl,D_decl,R_decl|Ds1], 
+		 [E_code,D_code,R_code|Fs], Es);
+	
 	#api_enum{extern=true} ->
 	    code(Is, Api, Ds, Fs, Es);
 
@@ -74,13 +76,15 @@ code([], _Api, Ds, Fs, Es) ->
 %% Generate function argument decoder for dispatch function
 %%
 code_dispatch(I,Api) ->
-    {ArgDecl,ArgDecode,ArgList} = dispatch_arguments(I#api_function.args,Api),
+    {ArgDecl,ArgDecode,ArgPost,ArgList} = 
+	dispatch_arguments(I#api_function.args,Api),
     ["  case ", mk_usymbol(Api#api.c_symbol_prefix, "CMD_"), 
      string:to_upper(I#api_function.name), ": {\n", 
      format_seq(ArgDecl, ";\n"),
      format_seq(ArgDecode, ";\n"),
      "    ", mk_symbol(Api#api.c_function_prefix, I#api_function.name),
      "(", format_list(["ctx","c_out"|ArgList], ","), ");\n",
+     format_seq(ArgPost, ";\n"),
      "    break;\n",
      "  }\n"].
 
@@ -110,9 +114,9 @@ extern_arguments([], _Api) ->
 
 
 dispatch_arguments(Args,Api) ->
-    dispatch_arguments(Args,Api,[],[],[]).
+    dispatch_arguments(Args,Api,[],[],[],[]).
 
-dispatch_arguments([A|As],Api,Decl,Decode,Args) ->
+dispatch_arguments([A|As],Api,Decl,Decode,Post,Args) ->
     Arg = atom_to_list(A#api_arg.name),
     ADecl =
 	case type_to_string(A#api_arg.type,Api,"") of
@@ -121,19 +125,19 @@ dispatch_arguments([A|As],Api,Decl,Decode,Args) ->
 	    TypeName ->
 		["    ",TypeName," ",Arg]
 	end,
-    Addr = case A#api_arg.type of
-	       #api_struct{} -> "&";
-	       ID when is_atom(ID) ->
-		   case dict:find(ID, Api#api.types) of
-		       {ok,#api_struct{}} -> "&";
-		       _ -> ""
-		   end;
-	       _ -> ""
+    Addr = case eapi:is_pointer_type(A#api_arg.type,Api) of
+	       true -> "&";
+	       false -> ""
 	   end,
     ADec = ["    ",elem_decode(A#api_arg.type, "c_in", ["&",Arg], Api)],
-    dispatch_arguments(As,Api,[ADecl|Decl],[ADec|Decode],[[Addr,Arg]|Args]);
-dispatch_arguments([],_Api,Decl,Decode,Args) ->
-    {reverse(Decl),reverse(Decode),reverse(Args)}.
+    Post1 = case elem_destroy(A#api_arg.type, [Arg], Api) of
+		[] -> Post;
+		Destroy -> [["    ",Destroy]|Post]
+	    end,
+    dispatch_arguments(As,Api,[ADecl|Decl],[ADec|Decode],Post1,
+		       [[Addr,Arg]|Args]);
+dispatch_arguments([],_Api,Decl,Decode,Post,Args) ->
+    {reverse(Decl),reverse(Decode),reverse(Post),reverse(Args)}.
 
 type_to_string(Type,Api,StructPtr) ->
     case Type of
@@ -155,9 +159,10 @@ type_to_string(Type,Api,StructPtr) ->
 	size_t    -> "size_t";
 	ssize_t   -> "ssize_t";
 	boolean_t -> "uint8_t";
-	binary_t  -> "eapi_binary_t";
+	binary_t  -> ["eapi_binary_t",StructPtr];
 	object_t  -> "void*";
-	string_t  -> "eapi_string_t";
+	handle_t  -> "void*";
+	string_t  -> ["eapi_string_t",StructPtr];
 	atom_t    -> "char*";  %% FIXME!!
 	{tuple,_Es} -> "void*"; %% FIXME
 	{list,EType} -> 
@@ -225,6 +230,8 @@ elem_decode(Type, Src, Dst, Api) ->
 	    ["cbuf_get_nbinary(",Src,",",Dst,")"];
 	object_t  ->
 	    ["cbuf_get_object(",Src,",",Dst,")"];
+	handle_t  ->
+	    ["cbuf_get_handle(",Src,",",Dst,")"];
 	string_t  -> 
 	    ["cbuf_get_nstring(",Src,",",Dst,")"];
 	{list, _EType} ->
@@ -245,6 +252,24 @@ elem_decode(Type, Src, Dst, Api) ->
 	    ["d_struct_", struct_name(Type), "(ctx,",Src,",",Dst,")"];
 	TName when is_atom(TName) ->
 	    elem_decode(dict:fetch(TName, Api#api.types), Src, Dst, Api)
+    end.
+
+elem_destroy(Type, Dst, Api) ->
+    case Type of
+	binary_t  ->
+	    ["cbuf_free_binary(&(",Dst,"))"];
+	string_t ->
+	    ["cbuf_free_string(&(",Dst,"))"];
+	#api_struct{} ->
+	    ["r_struct_", struct_name(Type), "(ctx,&",Dst,")"];
+	TName when is_atom(TName) ->
+	    case dict:find(TName, Api#api.types) of
+		{ok,Type1} ->
+		    elem_destroy(Type1, Dst, Api);
+		_ -> []
+	    end;
+	_ -> 
+	    []
     end.
 
 elem_encode(Type, Buf, Src0, Size, Api) ->
@@ -290,6 +315,8 @@ elem_encode(Type, Buf, Src0, Size, Api) ->
 	    ["cbuf_put_binary(",Buf,",",Src,",",Size,")"];
 	object_t  ->
 	    ["cbuf_put_object(",Buf,",",Src,")"];
+	handle_t  ->
+	    ["cbuf_put_handle(",Buf,",",Src,")"];
 	string_t  ->
 	    ["cbuf_put_string(",Buf,",",Src,")"];
 	atom_t ->
@@ -367,7 +394,7 @@ struct_def(I,Api) ->
      format_seq(
        map(
 	 fun(F) -> 
-		 io_lib:format("~s ~s",
+		 io_lib:format("  ~s ~s",
 			       [type_to_string(F#api_field.type,Api,""),
 				F#api_field.name])
 	 end,
@@ -426,6 +453,38 @@ struct_decoder(I, Api) when I#api_struct.c_decode ->
     Def = ["extern ", FDecl, ";\n"],
     {Def, Code};
 struct_decoder(_I, _Api) ->
+    {[],[]}.
+
+%% Generate release of struct elements
+struct_release(I, Api) when I#api_struct.c_decode ->
+    Name = struct_name(I),
+    FDecl = ["void r_struct_", Name,
+	     "(eapi_ctx_t* ctx, ", "struct ", Name, " *ptr)"],
+    Seq = foldr(
+	    fun(F,Acc) ->
+		    Addr = case eapi:is_pointer_type(F#api_field.type,Api) of
+			       true -> "&";
+			       false -> ""
+			   end,
+		    Dst = [Addr,"(ptr->",atom_to_list(F#api_field.name),")"],
+		    case elem_destroy(F#api_field.type,Dst,Api) of
+			[] -> Acc;
+			Destroy -> [["  ",Destroy] | Acc]
+		    end
+	    end, [], I#api_struct.fields),
+    Code =     
+	[FDecl,"\n",
+	 "{\n",
+	 if Seq =:= 0 ->
+		 ["  (void) ctx;\n",
+		  "  (void) ptr;\n" ];
+	    true ->
+		 format_seq(Seq, ";\n")
+	 end,
+	 "}\n\n"],
+    Def = ["extern ", FDecl, ";\n"],
+    {Def, Code};
+struct_release(_I, _Api) ->
     {[],[]}.
 
 %%

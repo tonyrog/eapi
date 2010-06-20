@@ -236,8 +236,8 @@ ErlDrvTermData driver_object_term(void* ptr)
     return 0;
 }
 
-// This make sure that erlang side wilö no see overhead data,
-// only object data (use in send_term data)
+// This makes sure that erlang side will not see overhead data,
+// only object data (used in send_term data)
 ErlDrvTermData driver_object_size(void* ptr)
 {
     if (ptr)

@@ -125,7 +125,6 @@ command(Port, Code, Args) ->
     CmdRef = random:uniform(16#ffffffff),
     Header = <<?uint32_t(Code),?uint32_t(CmdRef)>>,
     ?dbg("command: code=~w, ref=~w\n", [Code, CmdRef]),
-    io:format("command: Args=~p\n", [[Header,Args]]),
     erlang:port_command(Port,[Header,Args]),
     wait_reply(CmdRef).
 
@@ -160,7 +159,7 @@ open(Args) ->
     ?dbg("Load driver '~s' from: '~s'\n", [Driver, Path]),
     case erl_ddll:load_driver(Path, Driver) of
 	ok ->
-	    Port = erlang:open_port({spawn, Driver}, [binary]),
+	    Port = erlang:open_port({spawn_driver, Driver}, [binary]),
 	    case proplists:lookup(prt_name, Args) of
 		none ->
 		    {ok,Port};
@@ -185,12 +184,12 @@ open(Args) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init(Args) ->
-    {driver_name,Driver} = proplists:lookup(driver_name, Args),
-    {prt_name,PrtName} = proplists:lookup(prt_name, Args),
-    {reg_name,RegName} = proplists:lookup(reg_name, Args),
-    {srv_name,SrvName} = proplists:lookup(srv_name, Args),
     case open(Args) of
 	{ok,Port} ->
+	    {driver_name,Driver} = proplists:lookup(driver_name, Args),
+	    {prt_name,PrtName} = proplists:lookup(prt_name, Args),
+	    {reg_name,RegName} = proplists:lookup(reg_name, Args),
+	    {srv_name,SrvName} = proplists:lookup(srv_name, Args),
 	    Reg = ets:new(RegName, [named_table, public, set]),
 	    {ok, #s { port = Port, 
 		      reg  = Reg,

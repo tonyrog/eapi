@@ -120,6 +120,9 @@ extern ErlDrvTermData driver_object_offset(void* ptr);
 extern ErlDrvBinary*  driver_object_binary(void* ptr, int user_type);
 extern void* driver_binary_to_object_ptr(ErlDrvBinary* bin, int user_type);
 
+#ifdef DEBUG
+extern void eapi_drv_emit_error(char* file, int line, ...);
+#endif
 
 
 static inline int cbuf_get_binary(cbuf_t* c_in,uint32_t n,eapi_binary_t* bp)
@@ -159,6 +162,12 @@ static inline int cbuf_get_nbinary(cbuf_t* c_in, eapi_binary_t* bp)
     return r;
 }
 
+// release a binary object
+static void cbuf_free_binary(eapi_binary_t* bp)
+{
+    driver_free_binary(bp->bin);
+}
+
 // load a string, size is uint32 prefix
 static inline int cbuf_get_nstring(cbuf_t* c_in, eapi_string_t* sp)
 {
@@ -172,6 +181,15 @@ static inline int cbuf_get_nstring(cbuf_t* c_in, eapi_string_t* sp)
 	return (cbuf_read(c_in, sp->buf, n) == (int) n);
     }
     return r;
+}
+
+static inline void cbuf_free_string(eapi_string_t* sp)
+{
+    if (sp->buf) {
+	free(sp->buf);
+	sp->buf = 0;
+	sp->len = 0;
+    }
 }
 
 static inline int cbuf_get_object(cbuf_t* c_in, void** obj)

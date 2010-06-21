@@ -261,7 +261,7 @@ elem_destroy(Type, Dst, Api) ->
 	string_t ->
 	    ["cbuf_free_string(&(",Dst,"))"];
 	#api_struct{} ->
-	    ["r_struct_", struct_name(Type), "(ctx,&",Dst,")"];
+	    ["r_struct_", struct_name(Type), "(ctx,&(",Dst,"))"];
 	TName when is_atom(TName) ->
 	    case dict:find(TName, Api#api.types) of
 		{ok,Type1} ->
@@ -462,11 +462,7 @@ struct_release(I, Api) when I#api_struct.c_decode ->
 	     "(eapi_ctx_t* ctx, ", "struct ", Name, " *ptr)"],
     Seq = foldr(
 	    fun(F,Acc) ->
-		    Addr = case eapi:is_pointer_type(F#api_field.type,Api) of
-			       true -> "&";
-			       false -> ""
-			   end,
-		    Dst = [Addr,"(ptr->",atom_to_list(F#api_field.name),")"],
+		    Dst = ["ptr->",atom_to_list(F#api_field.name)],
 		    case elem_destroy(F#api_field.type,Dst,Api) of
 			[] -> Acc;
 			Destroy -> [["  ",Destroy] | Acc]

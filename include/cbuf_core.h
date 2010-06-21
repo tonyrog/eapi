@@ -75,20 +75,20 @@ static UNUSED void cbuf_print(cbuf_t* cp,char* name)
     if (cp->flags & CBUF_FLAG_BINARY)	fprintf(f," binary");
     if (cp->flags & CBUF_FLAG_HEAP)	fprintf(f," heap");
     fprintf(f,"\r\n");
-    fprintf(f,"     iv: %lu\r\n", cp->iv);
-    fprintf(f,"     ip: %lu\r\n", cp->ip);
-    fprintf(f,"  vsize: %lu\r\n", cp->vsize);
-    fprintf(f,"   vlen: %lu\r\n", cp->vlen);
+    fprintf(f,"     iv: %zu\r\n", cp->iv);
+    fprintf(f,"     ip: %zu\r\n", cp->ip);
+    fprintf(f,"  vsize: %zu\r\n", cp->vsize);
+    fprintf(f,"   vlen: %zu\r\n", cp->vlen);
     fprintf(f,"     dv: %s\r\n", (cp->v == cp->dv) ? "true" : "false");
     for (i = 0; i < cp->vlen; i++) {
-	fprintf(f,"    v[%lu].flags:", i);
+	fprintf(f,"    v[%zu].flags:", i);
 	if (cp->v[i].flags & CBUF_FLAG_BINARY)	fprintf(f," binary");
 	if (cp->v[i].flags & CBUF_FLAG_HEAP)	fprintf(f," heap");
 	fprintf(f,"\r\n");
-	fprintf(f,"    v[%lu].base = %p\r\n",  i, cp->v[i].base);
-	fprintf(f,"    v[%lu].size = %lu\r\n", i, cp->v[i].size);
-	fprintf(f,"    v[%lu].len  = %lu\r\n", i, cp->v[i].len);
-	fprintf(f,"    v[%lu].bp   = %p\r\n", i,  cp->v[i].bp);
+	fprintf(f,"    v[%zu].base = %p\r\n",  i, cp->v[i].base);
+	fprintf(f,"    v[%zu].size = %zu\r\n", i, cp->v[i].size);
+	fprintf(f,"    v[%zu].len  = %zu\r\n", i, cp->v[i].len);
+	fprintf(f,"    v[%zu].bp   = %p\r\n", i,  cp->v[i].bp);
     }
     fprintf(f,"};\r\n");
 }

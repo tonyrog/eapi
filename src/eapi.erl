@@ -849,22 +849,22 @@ is_integer_type(Type, Api) ->
 
 is_pointer_type(Type, Api) ->
     case Type of
-	{list, _EType} -> true;
-	{tuple, _Types} -> true;
+	{list, _EType} -> {true,Type};
+	{tuple, _Types} -> {true,Type};
 	{const, CType,_} -> is_pointer_type(CType,Api);
-	{array, _AType} -> true;
-	pointer_t -> true;
-	string_t -> true;
-	binary_t -> true;
-	#api_struct{} -> true; %% ???
+	{array, _AType} -> {true,Type};
+	pointer_t -> {true,Type};
+	string_t -> {true,Type};
+	binary_t -> {true,Type};
+	#api_struct{} -> {true,Type}; %% ???
 	TName when is_atom(TName) ->
 	    case dict:find(TName,Api#api.types) of
 		{ok,Type1} ->
 		    is_pointer_type(Type1, Api);
 		_ ->
-		    false
+		    {false,Type}
 	    end;
-	_ -> false
+	_ -> {false,Type}
     end.
 
 %%

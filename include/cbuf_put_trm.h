@@ -13,6 +13,16 @@
 #define PUT_DBG(fmt, ...) 
 #endif
 
+static inline int trm_put_1(cbuf_t* cp, ErlDrvTermData tag)
+{
+    ErlDrvTermData* p;
+
+    if (!(p = (ErlDrvTermData*) cbuf_seg_alloc(cp, sizeof(ErlDrvTermData))))
+	return 0;
+    p[0] = tag;
+    return 1;
+}
+
 
 static inline int trm_put_2(cbuf_t* cp, ErlDrvTermData tag, ErlDrvTermData value)
 {
@@ -193,7 +203,8 @@ static inline int cbuf_trm_put_list_begin(cbuf_t* cp, size_t n)
 static inline int cbuf_trm_put_list_end(cbuf_t* cp, size_t n)
 {
     PUT_DBG("LIST-END %lu", n);
-    return trm_put_2(cp, ERL_DRV_LIST, (ErlDrvTermData) n);
+    trm_put_1(cp, ERL_DRV_NIL);
+    return trm_put_2(cp, ERL_DRV_LIST, (ErlDrvTermData) (n+1));
 }
 
 static inline int cbuf_trm_put_tag_ok(cbuf_t* cp)

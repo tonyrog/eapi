@@ -126,8 +126,12 @@ dispatch_arguments([A|As],Api,Decl,Decode,Post,Args) ->
 		["    ",TypeName," ",Arg]
 	end,
     Addr = case eapi:is_pointer_type(A#api_arg.type,Api) of
-	       true -> "&";
-	       false -> ""
+	       {true,pointer_t} ->
+		   ""; %% pass pointer directly
+	       {true,_} -> 
+		   "&";
+	       {false,_} -> 
+		   ""
 	   end,
     ADec = ["    ",elem_decode(A#api_arg.type, "c_in", ["&",Arg], Api)],
     Post1 = case elem_destroy(A#api_arg.type, [Arg], Api) of
@@ -182,8 +186,8 @@ type_to_string(Type,Api,StructPtr) ->
 		    ["struct ",struct_name(I),StructPtr];
 		_ ->
 		    case eapi:is_pointer_type(ID,Api) of
-			true -> [atom_to_list(ID),"*"];
-			false -> atom_to_list(ID)
+			{true,_} -> [atom_to_list(ID),"*"];
+			{false,_} -> atom_to_list(ID)
 		    end
 	    end
     end.

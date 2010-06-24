@@ -40,7 +40,7 @@ dialyze:
 	dialyzer --src -o dia.out $(ERLC_FLAGS) -c $(MODULES:%=%.erl) 
 
 edoc:
-	erl -noshell -pa doc -run edoc_run application "cl" '".."' '[{private,true},no_packages,{sort_functions,false}]'
+	erl -noshell -pa doc -run edoc_run application "eapi" '".."' '[{private,true},no_packages,{sort_functions,false}]'
 ##erl -noshell -run edoc_run application "'$(APP_NAME)'"
 
 clean:

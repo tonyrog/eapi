@@ -26,7 +26,7 @@ clean_debug:
 lib: $(LIBDIR)/$(EAPI_PFX)eapi_drv.a
 
 $(LIBDIR)/$(EAPI_PFX)eapi_drv.a: $(EDRV_OBJS)
-	rm $@
+	rm -f $@
 	$(AR) -r $@ $(EDRV_OBJS)
 	$(RANLIB) $@
 

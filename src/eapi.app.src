@@ -1,6 +1,6 @@
 {application, eapi,
  [{description, "Erlang API library"},
-  {vsn, "%VSN%"},
+  {vsn, git},
   {modules, [cbuf, eapi, eapi_erl, eapi_c, eapi_drv]},
   {registered, []},
   {env, []},

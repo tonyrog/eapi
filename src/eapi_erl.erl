@@ -211,6 +211,7 @@ elem_encode(Type, Var, Expr, Api) ->
 	float64_t -> {"",["?float64_t((",Expr,"))"]};
 	float_t   -> {"",["?float_t((",Expr,"))"]};
 	int_t     -> {"",["?int_t((",Expr,"))"]};
+	integer_t -> {"",["?int_t((",Expr,"))"]};
 	int       -> {"",["?int_t((",Expr,"))"]};
 	uint_t    -> {"",["?uint_t((",Expr,"))"]};
 	pointer_t -> {"",["?pointer_t((",Expr,"))"]};
@@ -245,6 +246,10 @@ elem_encode(Type, Var, Expr, Api) ->
 	      Var,"__len = length(",Expr,")"],
 	     ["?uint32_t(",Var,"__len),",
 	      Var,"__bin/binary"]};
+
+	{union,_TList} ->
+	    %% Fixme union
+	    {"",""};
 
 	{array,_AType} ->
 	    %% Value is assumed to be a tuple 

@@ -157,6 +157,7 @@ type_to_string(Type,Api,StructPtr) ->
 	float64_t -> "float64_t";
 	float_t   -> "float_t";
 	int_t     -> "int";
+	integer_t -> "int";
 	int       -> "int";
 	uint_t    -> "unsigned int";
 	pointer_t -> "void*";
@@ -217,6 +218,8 @@ elem_decode(Type, Src, Dst, Api) ->
 	float_t   ->
 	    ["cbuf_get_float(",Src,",",Dst,")"];
 	int_t     ->
+	    ["cbuf_get_int(",Src,",",Dst,")"];
+	integer_t     ->
 	    ["cbuf_get_int(",Src,",",Dst,")"];
 	int       ->
 	    ["cbuf_get_int(",Src,",",Dst,")"];
@@ -302,6 +305,8 @@ elem_encode(Type, Buf, Src0, Size, Api) ->
 	float_t   ->
 	    ["cbuf_put_float(",Buf,",",Src,")"];
 	int_t     ->
+	    ["cbuf_put_int(",Buf,",",Src,")"];
+	integer_t     ->
 	    ["cbuf_put_int(",Buf,",",Src,")"];
 	int       ->
 	    ["cbuf_put_int(",Buf,",",Src,")"];

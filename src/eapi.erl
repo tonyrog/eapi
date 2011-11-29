@@ -225,9 +225,9 @@ verify_chars(Err, Buf) ->
 %%
 %%  constant      = {const,<type>,<value>}
 %%  unsigned-type = uint8_t | uint16_t | uint32_t | uint64_t | uint_t
-%%  signed-type   = int8_t | int16_t | int32_t | int64_t | int_t | int
+%%  signed-type   = int8_t | int16_t | int32_t | int64_t | int_t | int | integer_t |
 %%  integer-type  = unsigned-type | unsigned-type | size_t | ssize_t
-%%  float-type    = float32_t | float64_t | float_t | float | double
+%%  float-type    = float32_t | float64_t | float_t | float | double | float_t |
 %%  void          = {const,atom_t,ok}
 %%  field-name    = atom_t
 %%  function-name = atom_t
@@ -344,15 +344,17 @@ load_api([Item|Items], Api, ApiList) ->
 	{typedef, Name, Type} when is_atom(Name) ->
 	    case dict:find(Name, Api#api.types) of
 		error ->
-		    case verify_type(Type,Api) of
+		    Types1 = dict:store(Name,recursive,Api#api.types),
+		    Api1=Api#api { types = Types1 },
+		    case verify_type(Type,Api1) of
 			true ->
-			    Types = dict:store(Name,Type,Api#api.types),
-			    load_api(Items, Api#api { types = Types },
+			    Types2 = dict:store(Name,Type,Api#api.types),
+			    load_api(Items, Api#api { types = Types2 },
 				     ApiList);
 			false ->
-			    Api1 = add_error("Bad type typedef ~s ~p",
-					     [Name,Type], Api),
-			    load_api(Items, Api1, ApiList)
+			    Api2 = add_error("Bad type typedef ~s ~p",
+					     [Name,Type], Api1),
+			    load_api(Items, Api2, ApiList)
 		    end;
 		{ok,_} ->
 		    Api1 = add_error("Type ~s multiply defined", [Name],Api),
@@ -376,10 +378,14 @@ load_api([Item|Items], Api, ApiList) ->
 
 
 	{struct,Name,Fields}  when is_atom(Name), is_list(Fields) ->
-	    {ApiFields,Api1} = load_api_fields(Fields, Api),
+	    Types1 = dict:store(Name,recursive,Api#api.types),
+	    Api1=Api#api { types = Types1 },
+	    {ApiFields,Api2} = load_api_fields(Fields, Api1),
+	    Types2 = dict:erase(Name,recursive,Api2#api.types),
+	    Api3=Api2#api { types = Types2 },
 	    Struct = #api_struct { name   = atom_to_list(Name),
 				   fields = ApiFields },
-	    load_api_struct(Name, Struct, Items, Api1, ApiList);
+	    load_api_struct(Name, Struct, Items, Api3, ApiList);
 
 	{struct,Opts,Name,Fields}  
 	  when is_atom(Name), is_list(Fields) ->
@@ -474,7 +480,6 @@ load_api_enum(ID, I, Items, Api, ApiList) ->
 load_api_struct(ID, I, Items, Api, ApiList) ->
     case dict:find(ID, Api#api.types) of
 	error ->
-	    %% Allow recursive type?
 	    case verify_type(I,Api) of
 		true ->
 		    Types = dict:store(ID, I, Api#api.types),
@@ -634,8 +639,13 @@ check_type(Type, Api) ->
     end.
 
 
-    
+verify_type(Type, Api) when is_atom(Type) ->
+    verify_type_(Type, Api, [Type]);
 verify_type(Type, Api) ->
+    verify_type_(Type, Api, []).
+    
+verify_type_(Type, Api, Ts) ->
+    io:format("verify type: ~p, visited=~p\n", [Type,Ts]),
     case Type of
 	boolean_t -> true;
 	uint_t    -> true;
@@ -645,6 +655,7 @@ verify_type(Type, Api) ->
 	uint64_t  -> true;
 	int       -> true;
 	int_t     -> true;
+	integer_t -> true;
 	int8_t    -> true;
 	int16_t   -> true;
 	int32_t   -> true;
@@ -660,11 +671,12 @@ verify_type(Type, Api) ->
 	atom_t    -> true;
 	string_t  -> true;
 	pointer_t -> true;
+	recursive -> true;
 
 	#api_enum { type=Encoding, enums=Enums} ->
 	    Values = map(fun({_,Value}) -> Value end, Enums),
 	    Names  = map(fun({Name,_}) -> Name end, Enums),
-	    verify_type(Encoding,Api)
+	    verify_type_(Encoding,Api,Ts)
 		andalso
 		is_integer_type(Encoding,Api) 
 		andalso 
@@ -680,33 +692,39 @@ verify_type(Type, Api) ->
 				  if is_atom(Value) -> 
 					  true;
 				     true ->
-					  verify_type({const,Encoding,Value},
-						      Api)
+					  verify_type_({const,Encoding,Value},
+						       Api, Ts)
 				  end
 			  end, Values);
 	#api_struct { fields = Fields } when is_list(Fields) ->
+	    %% FIXME: verify field types
 	    FieldNames = lists:map(fun(F) -> F#api_field.name end, Fields),
 	    length(FieldNames) == length(lists:usort(FieldNames));
 
-	{list,EType} -> 
-	    verify_type(EType,Api);
+	{list,EType} ->
+	    verify_type_(EType,Api,Ts);
 	{array,EType} ->
-	    verify_type(EType,Api);
+	    verify_type_(EType,Api,Ts);
 	{tuple,Types} when is_list(Types) ->
-	    lists:all(fun(T) -> verify_type(T, Api) end, Types);
+	    lists:all(fun(T) -> verify_type_(T, Api,Ts) end, Types);
 	{union, Types} ->
-	    lists:all(fun(UType)  -> verify_type(UType, Api) end, 
+	    lists:all(fun(UType)  -> verify_type_(UType, Api,Ts) end, 
 		      Types);
 	{const,CType,Value} ->
-	    verify_type(CType,Api) 
+	    verify_type_(CType,Api,Ts) 
 		andalso
 		verify_value(CType, Value, Api);
 	Name when is_atom(Name) ->
-	    case dict:find(Name, Api#api.types) of
-		{ok,NType} ->
-		    verify_type(NType, Api);
-		error ->
-		    false
+	    case lists:member(Name, Ts) of
+		true -> 
+		    true; %% recursive type
+		false ->
+		    case dict:find(Name, Api#api.types) of
+			{ok,NType} ->
+			    verify_type_(NType, Api,[Name|Ts]);
+			error ->
+			    false
+		    end
 	    end;
 	_ ->
 	    false
@@ -735,6 +753,7 @@ verify_value(T, V, Api) ->
 	    is_integer(V) andalso (V >= -16#8000000000000000) 
 		andalso (V =< 16#7fffffffffffffff);
 	int_t  -> is_integer(V);
+	integer_t -> is_integer(V);
 	int    -> is_integer(V);
 	ssize_t  ->
 	    is_integer(V);
@@ -836,6 +855,7 @@ is_integer_type(Type, Api) ->
 	int32_t -> true;
 	int64_t -> true;
 	int_t -> true;
+	integer_t -> true;
 	int   -> true;
 	size_t -> true;
 	ssize_t -> true;
@@ -886,6 +906,7 @@ resolve_type(Type, Api) ->
 	int32_t -> Type;
 	int64_t -> Type;
 	int_t -> Type;
+	integer_t -> int_t;
 	int   -> Type;
 	float32_t -> Type;
 	float64_t -> Type;

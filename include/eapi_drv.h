@@ -20,6 +20,12 @@
 #include "cbuf.h"
 #include "lhash.h"
 
+// Hack to handle R15 driver used with pre R15 driver
+#if ERL_DRV_EXTENDED_MAJOR_VERSION == 1
+typedef int  ErlDrvSizeT;
+typedef int  ErlDrvSSizeT;
+#endif
+
 // Type map to external communication
 // Assume SHORT == INT16
 #define SHORT                    INT16
@@ -162,8 +168,8 @@ static inline int cbuf_get_nbinary(cbuf_t* c_in, eapi_binary_t* bp)
     return r;
 }
 
-// release a binary object
-static void cbuf_free_binary(eapi_binary_t* bp)
+// release a binary object (not used by eapi_drv_lib it self!)
+static void UNUSED cbuf_free_binary(eapi_binary_t* bp)  
 {
     driver_free_binary(bp->bin);
 }

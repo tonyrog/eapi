@@ -19,12 +19,12 @@ static void       (*eapi_drv_impl_finish)(ErlDrvData d) = 0;
 static int        eapi_drv_init(void);
 static void       eapi_drv_finish(void);
 static void       eapi_drv_stop(ErlDrvData);
-static void       eapi_drv_output(ErlDrvData, char*, int);
+static void       eapi_drv_output(ErlDrvData, char*, ErlDrvSizeT);
 static void       eapi_drv_outputv(ErlDrvData, ErlIOVec*);
 static void       eapi_drv_ready_input(ErlDrvData, ErlDrvEvent);
 static void       eapi_drv_ready_output(ErlDrvData data, ErlDrvEvent event);
 static ErlDrvData eapi_drv_start(ErlDrvPort, char* command);
-static int        eapi_drv_ctl(ErlDrvData,unsigned int,char*, int,char**,int);
+static ErlDrvSSizeT eapi_drv_ctl(ErlDrvData,unsigned int,char*,ErlDrvSizeT,char**, ErlDrvSizeT);
 static void       eapi_drv_timeout(ErlDrvData);
 
 typedef struct _eapi_drv_object_t {
@@ -354,9 +354,9 @@ static void eapi_drv_stop(ErlDrvData d)
     driver_free(ctx);
 }
 
-static int eapi_drv_ctl(ErlDrvData d, 
-		    unsigned int cmd, char* buf, int len,
-		    char** rbuf, int rsize)
+static ErlDrvSSizeT eapi_drv_ctl(ErlDrvData d, 
+				 unsigned int cmd, char* buf, ErlDrvSizeT len,
+				 char** rbuf, ErlDrvSizeT rsize)
 {
     eapi_ctx_t* ctx = (eapi_ctx_t*) d;
     cbuf_t  arg;    // argument data stream
@@ -394,7 +394,7 @@ static int eapi_drv_ctl(ErlDrvData d,
     }    
 }
 
-static void eapi_drv_output(ErlDrvData d, char* buf, int len)
+static void eapi_drv_output(ErlDrvData d, char* buf, ErlDrvSizeT len)
 {
     eapi_ctx_t*   ctx = (eapi_ctx_t*) d;
     cbuf_t     arg;    // argument data stream

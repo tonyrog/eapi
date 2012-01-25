@@ -17,7 +17,11 @@
 
 #include "erl_driver.h"
 
-#define UNUSED __attribute__((unused))
+#if defined __GNUC__
+#define UNUSED  __attribute__ ((unused))
+#else
+#define UNUSED
+#endif
 
 #define CBUF_FLAG_HEAP     0x01  // allocated heap memory
 #define CBUF_FLAG_BINARY   0x02  // ErlDrvBinary 

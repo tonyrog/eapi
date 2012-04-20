@@ -39,7 +39,7 @@ depend:
 dialyze:
 	dialyzer --src -o dia.out $(ERLC_FLAGS) -c $(MODULES:%=%.erl) 
 
-edoc:
+doc:
 	erl -noshell -pa doc -run edoc_run application "eapi" '".."' '[{private,true},no_packages,{sort_functions,false}]'
 ##erl -noshell -run edoc_run application "'$(APP_NAME)'"
 

@@ -381,7 +381,7 @@ load_api([Item|Items], Api, ApiList) ->
 	    Types1 = dict:store(Name,recursive,Api#api.types),
 	    Api1=Api#api { types = Types1 },
 	    {ApiFields,Api2} = load_api_fields(Fields, Api1),
-	    Types2 = dict:erase(Name,recursive,Api2#api.types),
+	    Types2 = dict:erase(Name,Api2#api.types),
 	    Api3=Api2#api { types = Types2 },
 	    Struct = #api_struct { name   = atom_to_list(Name),
 				   fields = ApiFields },

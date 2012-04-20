@@ -75,7 +75,7 @@ encode_cti_tuple(Tuple) ->
 encode_cti_tuple_(_T, 0, Acc) ->
     Acc;
 encode_cti_tuple_(T, I, Acc) ->
-    encode_cti_tuple_(T, I-1, [encode_cti_(element(T, I)) | Acc]).
+    encode_cti_tuple_(T, I-1, [encode_cti_(element(I, T)) | Acc]).
      
 is_string([X|Xs]) when X >= 0, X =< 255 -> is_string(Xs);
 is_string([]) -> true;

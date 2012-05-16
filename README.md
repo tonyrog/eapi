@@ -38,7 +38,7 @@ Compile:
 $ cd eapi
 $ rebar compile
 ...
-==> epai (compile)
+==> eapi (compile)
 ```
 
 

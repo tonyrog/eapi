@@ -24,7 +24,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "eapi_drv.h"
+#include "../include/eapi_drv.h"
+
+// include the c-code - to only ONE object file
+#include "../include/lhash.c"
 
 // debug async events
 #define A_DBG(...) EAPI_DRV_DBG(__VA_ARGS__)

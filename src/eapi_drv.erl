@@ -27,6 +27,7 @@
 
 -behaviour(gen_server).
 
+%% -define(debug, true).
 %% API
 -export([start_link/1, start/1, stop/1]).
 -export([open/1]).
@@ -162,15 +163,10 @@ wait_reply(CmdRef) ->
 open(Args) ->
     {driver_name,Driver} = proplists:lookup(driver_name, Args),
     {app,App}           = proplists:lookup(app, Args),
-    DPath = case proplists:get_bool(debug, Args) of
-		false -> ?drv_path;
-		true -> "debug"
-	    end,
     Path =  
 	case code:priv_dir(App) of
 	    {error, bad_name} -> ".";
-	    Dir ->
-		filename:join([Dir,DPath])
+	    Dir -> Dir
 	end,
     ?dbg("Load driver '~s' from: '~s'\n", [Driver, Path]),
     case erl_ddll:load_driver(Path, Driver) of

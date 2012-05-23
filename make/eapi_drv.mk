@@ -33,7 +33,7 @@ ifeq ($(TYPE), debug)
 OBJDIR=../obj/debug
 LIBDIR=../lib/debug
 PRIVDIR=../priv/debug
-CFLAGS +=  -Ddebug -DDEBUG -g 
+CFLAGS +=  -DDEBUG -g 
 endif
 
 ifeq ($(TYPE), release)

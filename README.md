@@ -2,7 +2,6 @@ eapi
 =====
 
 
-
 ### Dependencies
 
 To build eapi you will need a working installation of Erlang R15B (or
@@ -12,6 +11,12 @@ can be found [here](https://github.com/erlang/otp/wiki/Installation)
 ([more info](https://github.com/erlang/otp/blob/master/INSTALL.md)).
 
 eapi is built using rebar that can be found [here](https://github.com/basho/rebar), with building instructions [here](https://github.com/basho/rebar/wiki/Building-rebar).
+
+eapi also requires the following applications to be installed:
+<ul>
+<li>dthread - https://github.com/tonyrog/dthread</li>
+<li>uart - https://github.com/tonyrog/uart</li>
+</ul>
 
 
 ### Downloading

@@ -1,6 +1,8 @@
-eapi
+eapi - DEPRECATED
 =====
 
+eapi is now deprecated, for the C side use the dthread library instead, 
+for the Erlang side manual labour is required.
 
 ### Dependencies
 
